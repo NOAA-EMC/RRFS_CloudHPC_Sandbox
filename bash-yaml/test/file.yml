@@ -1,0 +1,27 @@
+--
+date_cur: 20210223
+date_prv: 20210222
+res: 3357
+num_mem: 9
+
+--
+members:
+  -
+    num: 1
+    run: "Yes"
+    IC: "GFS"
+    LBC: "GFS"
+    GEP: ""
+  -
+    num: 2
+    run: "Yes"
+    IC: "GEFS"
+    LBC: "GEFS"
+    GEP: "01"
+  -
+    num: 3
+    run: "Yes"
+    IC: "GEFS"
+    LBC: "GEFS"
+    GEP: "02"
+

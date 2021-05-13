@@ -1,0 +1,52 @@
+#!/bin/python
+
+import datetime,array,os,time
+from datetime import timedelta
+
+
+#grib2_dir='/lustre/ensemble/UFS_UTILS/driver_scripts/jili/'
+#grib2_combine_dir='/lustre/ensemble/UFS_UTILS/driver_scripts/jili/combine/'
+#unique_dir='/lustre/ensemble/UFS_UTILS/driver_scripts/jili/'
+#end_hr=66
+#hr_interval=3
+#cycle="2021022318"
+
+grib2_dir='__GRIB2_DIR__'
+grib2_combine_dir='__GRIB2_COMBINE_DIR__'
+unique_dir='__UNIQUE_DIR__'
+end_hr=__END_HOUR__
+hr_interval=__HR_INTERVAL__
+cycle="__CYCLE__"
+
+
+yyyymmdd=cycle[0:8]
+yyyymm=cycle[0:6]
+hh=cycle[8:10]
+
+grib2_cycle_dir=grib2_dir+'gfs.'+yyyymmdd+'/'+hh+'/'
+grib2_combine_cycle_dir=grib2_combine_dir+'gfs.'+yyyymmdd+'/'+hh+'/'
+
+if not os.path.exists(grib2_combine_cycle_dir):
+    os.makedirs(grib2_combine_cycle_dir)
+
+for hhh in range(6, end_hr+hr_interval, hr_interval):
+    grib2_file=grib2_cycle_dir+'gfs.t'+hh+'z.pgrb2.0p25.f'+str(hhh).zfill(3)
+    grib2b_file=grib2_cycle_dir+'gfs.t'+hh+'z.pgrb2b.0p25.f'+str(hhh).zfill(3)
+
+    grib2_combine_tmp=grib2_combine_cycle_dir+'gfs.t'+hh+'z.pgrb2.0p25.f'+str(hhh).zfill(3)+'_tmp'
+    grib2_file_combine=grib2_combine_cycle_dir+'gfs.t'+hh+'z.pgrb2.0p25.f'+str(hhh).zfill(3)
+
+
+
+    cat_cmd='cat '+grib2_file+' '+grib2b_file+' > '+grib2_combine_tmp
+    os.system(cat_cmd)
+
+    unique_cmd='wgrib2 '+grib2_combine_tmp+' -submsg 1 | '+unique_dir+'grib2_unique.pl | wgrib2 -i '+grib2_combine_tmp+' -GRIB '+grib2_file_combine
+    os.system(unique_cmd)
+    os.remove(grib2_combine_tmp)
+
+    print (grib2_file)
+
+
+
+

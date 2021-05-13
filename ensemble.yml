@@ -1,0 +1,103 @@
+--
+date_cur: 20210513
+date_prv: 20210512
+tot_mem: 1
+res: 3445
+hour_from: 18
+hr_interval: 3
+nhours_fcst: 60
+num_posts: 61
+hr_post_skip: 1
+fcst_out_file: "out.na.720x2.60hr"
+fcst_err_file: "err.na.720x2.60hr"
+pfx_dir: "/lustre/ensemble"
+gfs_pfix: "https://ftp.ncep.noaa.gov/data/nccf/com/gfs/prod/gfs.${date_prv}/${hour_from}/atmos"
+gfs_file_atm: "gfs.t${hour_from}z.atmf006.nemsio"
+gfs_file_sfc: "gfs.t${hour_from}z.sfcf006.nemsio"
+gfs_stub_b2: "gfs.t${hour_from}z.pgrb2.0p25.f0"
+gfs_stub_b2b: "gfs.t${hour_from}z.pgrb2b.0p25.f0"
+gefs_pfix_a: "https://ftp.ncep.noaa.gov/data/nccf/com/gens/prod/gefs.${date_prv}/${hour_from}/atmos/pgrb2ap5"
+gefs_pfix_b: "https://ftp.ncep.noaa.gov/data/nccf/com/gens/prod/gefs.${date_prv}/${hour_from}/atmos/pgrb2bp5"
+gefs_stub: "t${hour_from}z.pgrb2.0p50.f0"
+gefs_stub_a: "t${hour_from}z.pgrb2a.0p50.f0"
+gefs_stub_b: "t${hour_from}z.pgrb2b.0p50.f0"
+bucket: "noaa-ncepdev-ncep-cam"
+bucket_bdp: "noaa-rrfs-pds"
+
+--
+members:
+  -
+    num: 1
+    cp_from: 1
+    run: "Yes"
+    Type: "GFS"
+    gep_num: ""
+    beg_hour: 6
+    end_hour: 66
+  -
+    num: 2
+    cp_from: 2
+    run: "Yes"
+    Type: "GEFS"
+    gep_num: "1"
+    beg_hour: 6
+    end_hour: 66
+  -
+    num: 3
+    cp_from: 3
+    run: "Yes"
+    Type: "GEFS"
+    gep_num: "2"
+    beg_hour: 6
+    end_hour: 66
+  -
+    num: 4
+    cp_from: 4
+    run: "Yes"
+    Type: "GFS"
+    gep_num: ""
+    beg_hour: 6
+    end_hour: 66
+  -
+    num: 5
+    cp_from: 5
+    run: "Yes"
+    Type: "GEFS"
+    gep_num: "1"
+    beg_hour: 6
+    end_hour: 66
+  -
+    num: 6
+    cp_from: 6
+    run: "Yes"
+    Type: "GEFS"
+    gep_num: "2"
+    beg_hour: 6
+    end_hour: 66
+  -
+    num: 7
+    cp_from: 7
+    run: "Yes"
+    Type: "GFS"
+    gep_num: ""
+    beg_hour: 6
+    end_hour: 66
+  -
+    num: 8
+    cp_from: 8
+    run: "Yes"
+    Type: "GEFS"
+    gep_num: "1"
+    beg_hour: 6
+    end_hour: 66
+  -
+    num: 9
+    cp_from: 9
+    run: "Yes"
+    Type: "GEFS"
+    gep_num: "2"
+    beg_hour: 6
+    end_hour: 66
+
+
+
