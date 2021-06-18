@@ -2,7 +2,7 @@
 
 declare -A clust_ip_addr
 
-date_cur=20210513
+date_cur=20210602
 res=3445 #or 3445
 nclusts=9
 

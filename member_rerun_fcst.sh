@@ -7,6 +7,15 @@ set -e
 cd "$(dirname "${BASH_SOURCE[0]}")"
 source ./bash-yaml/script/yaml.sh
 
+module use /contrib/apps/modules
+module load hpc-stack/1.1.0
+module load intel/19.0.5.281
+module load intelmpi
+
+#export gridspecs="lambert:262.5:38.5:38.5 237.826355:1746:3000 21.885885:1014:3000"
+export gridspecs="lambert:262.5:38.5:38.5 237.280:1799:3000 21.138:1059:3000"
+
+
 run_forecast () {
 	local mem_num=${1}
 	local Type
@@ -108,7 +117,12 @@ run_forecast () {
         sed -i "s@__FCST_OUT_FILE__@$fcst_out_file@g" run_forecast.sh
         sed -i "s@__FCST_ERR_FILE__@$fcst_err_file@g" run_forecast.sh
 
-	chmod +x fv3_gfs.x
+	if [[ $mem_num == "7" || $mem_num == "8" || $mem_num == "9" ]]; then
+		cp fv3_gfs.x.upp1006 fv3_gfs.x
+		chmod +x fv3_gfs.x
+	else
+		chmod +x fv3_gfs.x
+	fi
 
         if [ ! -d "RESTART" ]; then
                 mkdir -p RESTART
@@ -150,7 +164,7 @@ run_forecast () {
 		while (test "$status" != "Yes" )
 		do
 			if [ -f "$status_file_chgres_end" ]; then
-				echo "GFS FORECAST STARTED" > ${status_file_forecast_beg}
+				echo "RRFS FORECAST STARTED" > ${status_file_forecast_beg}
 				date_str=$(date)
 				echo "$date_str member:$mem_num FORECAST STARTED" >> ${tstamps}
 
@@ -194,7 +208,7 @@ run_forecast () {
 		while (test "$status" != "Yes" )
 		do
 			if [ -f "$status_file_chgres_end" ]; then
-				echo "GEFS FORECAST STARTED" > ${status_file_forecast_beg}
+				echo "RRFS FORECAST STARTED" > ${status_file_forecast_beg}
 				date_str=$(date)
 				echo "$date_str member:$mem_num FORECAST STARTED" >> ${tstamps}
 
@@ -223,6 +237,8 @@ run_forecast () {
 	fi
 #Store post-processed file in AWS S3 bucket
 	source /contrib/.aws/bdp.key
+#unset e to continue processing with wgrib2 errors
+unset e
 	cd ${fcst_rundir}
 	num_posts=`expr $num_posts - 1`
         for chour in $(seq 0 "$hr_post_skip" "$num_posts")
@@ -237,32 +253,64 @@ run_forecast () {
                                 hour_name=''$chour
                                 new_hour_name='0'$chour
                         fi
-                        post_filename=PRSLEV.GrbF${hour_name}
-                        path_filename=${fcst_rundir}/PRSLEV.GrbF${hour_name}
-			echo "$post_filename is about to be uploaded to S3"
+                        post_file=PRSLEV.GrbF${hour_name}
+                        post_conv_file=PRSLEV.GrbF${hour_name}.converted
+                        post_small_file=PRSLEV_small1
+                        path_file=${fcst_rundir}/PRSLEV.GrbF${hour_name}
+                        path_small_file=${fcst_rundir}/PRSLEV_small1
+			echo "$post_file is about to be uploaded to S3"
 
-                        if [ -f "$path_filename" ]; then
+                        if [ -f "$path_file" ]; then
                                 #check if chgres processed file size changes in 1 second
-                                file_size=$(stat --printf=%s $path_filename)
+                                file_size=$(stat --printf=%s $path_file)
                                 sleep 1
-                                file_size1=$(stat --printf=%s $path_filename)
+                                file_size1=$(stat --printf=%s $path_file)
                                 #if file size hasn't changed, count the file; increment the counter, etc.
                                 if [ $file_size == $file_size1 ] && [ $file_size -gt 0 ]; then
 					if [ $res == "3357" ]; then
-                        			s3_filename=rrfs.t00z.mem0${mem_num}.conusf${new_hour_name}.grib2
-						post_stat=$(aws s3 cp ${post_filename} ${s3_post_grib_pfx}/${s3_filename})
-						#post_stat=$(aws s3 cp ${post_filename} ${s3_post_grib_pfx}/${post_filename})
+                        			s3_file=rrfs.t00z.mem0${mem_num}.conusf${new_hour_name}.grib2
+                        			s3_reduc_file=rrfs.t00z.mem0${mem_num}.testbed.conusf${new_hour_name}.grib2
+						post_stat=$(aws s3 cp ${post_file} ${s3_post_grib_pfx}/${s3_file})
 						wait
-                                        	echo "$post_filename is uploaded and has a size of $file_size bytes"
-                                        	echo "$post_stat"
+                                                echo "$post_file is uploaded and has a size of $file_size bytes"
+						date_str=$(date)
+						echo "$date_str member:$mem_num $s3_file uploaded to BDP bucket" >> ${tstamps}
+						#########################
+                                                wgrib2 -v $post_file  > tmp.txt
+                                                if [ "$?" -eq 0 ]; then
+							wgrib2 $post_file | grep -F -f /contrib/rpanda/parm/testbed.txt  | wgrib2 -i -grib PRSLEV_small1 $post_file 
+                                                        post_reduc_stat=$(aws s3 cp ${post_small_file} ${s3_post_grib_pfx}/${s3_reduc_file})
+                                                        wait
+                                                	date_str=$(date)						
+							echo "$date_str member:$mem_num $s3_reduc_file uploaded to BDP bucket" >> ${tstamps}
+                                                else
+                                                        echo "$post_file did not validate; skipping upload to S3"
+                                                	date_str=$(date)						
+							echo "$date_str member:$mem_num $post_file did not validate; skipping upload of $s3_reduc_file to BDP bucket" >> ${tstamps}
+                                                fi
 						status=Yes
 					elif [ $res == "3445" ]; then
-                        			s3_filename=rrfs.t00z.mem0${mem_num}.naf${new_hour_name}.grib2
-						post_stat=$(aws s3 cp ${post_filename} ${s3_post_grib_pfx}/${s3_filename})
-						#post_stat=$(aws s3 cp ${post_filename} ${s3_post_grib_pfx}/${post_filename})
+                        			s3_file=rrfs.t00z.mem0${mem_num}.naf${new_hour_name}.grib2
+                        			s3_reduc_file=rrfs.t00z.mem0${mem_num}.testbed.conusf${new_hour_name}.grib2
+						post_stat=$(aws s3 cp ${post_file} ${s3_post_grib_pfx}/${s3_file})
 						wait
-                                        	echo "$post_filename is uploaded and has a size of $file_size bytes"
-                                        	echo "$post_stat"
+                                                echo "$post_file is uploaded and has a size of $file_size bytes"
+						date_str=$(date)
+						echo "$date_str member:$mem_num $s3_file uploaded to BDP bucket" >> ${tstamps}
+						#########################
+                                                wgrib2 -v $post_file  > tmp.txt
+                                                if [ "$?" -eq 0 ]; then
+                                                        wgrib2 $post_file -set_bitmap 1 -set_grib_type c3 -new_grid_winds grid -new_grid $gridspecs $post_conv_file > /dev/null
+                                                        wgrib2 $post_conv_file | grep -F -f /contrib/rpanda/parm/testbed.txt  | wgrib2 -i -grib PRSLEV_small1 $post_conv_file
+                                                        post_reduc_stat=$(aws s3 cp ${post_small_file} ${s3_post_grib_pfx}/${s3_reduc_file})
+                                                        wait
+                                                	date_str=$(date)						
+							echo "$date_str member:$mem_num $s3_reduc_file uploaded to BDP bucket" >> ${tstamps}
+                                                else
+                                                        echo "$post_file did not validate; skipping upload to S3"
+                                                	date_str=$(date)						
+							echo "$date_str member:$mem_num $post_file did not validate; skipping upload of $s3_reduc_file to BDP bucket" >> ${tstamps}
+                                                fi
 						status=Yes
 					fi 
 				else
@@ -273,6 +321,7 @@ run_forecast () {
                         fi
         	done
         done
+set -e
 	source /contrib/.aws/proj.key
 	post_stat=$(aws s3 cp ${fcst_out_file} ${s3_post_text_pfx}/${fcst_out_file})
 	wait
@@ -283,12 +332,12 @@ run_forecast () {
 
 	if [ $Type == '"GFS"' ]; then
 		local status_file_forecast_end=${STATUS_DIR}/${mem_num}_FORECAST_COMPLETED
-		echo "GFS FORECAST COMPLETED" > ${status_file_forecast_end}
+		echo "RRFS FORECAST COMPLETED" > ${status_file_forecast_end}
 		date_str=$(date)
 		echo "$date_str member:$mem_num FORECAST COMPLETED" >> ${tstamps}
 	elif [ $Type == '"GEFS"' ]; then
 		local status_file_forecast_end=${STATUS_DIR}/${mem_num}_FORECAST_COMPLETED
-		echo "GEFS FORECAST COMPLETED" > ${status_file_forecast_end}
+		echo "RRFS FORECAST COMPLETED" > ${status_file_forecast_end}
 		date_str=$(date)
 		echo "$date_str member:$mem_num FORECAST COMPLETED" >> ${tstamps}
 	fi

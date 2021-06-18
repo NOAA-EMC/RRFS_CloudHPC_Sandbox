@@ -1,6 +1,6 @@
 --
-date_cur: 20210513
-date_prv: 20210512
+date_cur: 20210602
+date_prv: 20210601
 tot_mem: 1
 res: 3445
 hour_from: 18
@@ -8,8 +8,8 @@ hr_interval: 3
 nhours_fcst: 60
 num_posts: 61
 hr_post_skip: 1
-fcst_out_file: "out.na.720x2.60hr"
-fcst_err_file: "err.na.720x2.60hr"
+fcst_out_file: "out.na.1440x2.60hr"
+fcst_err_file: "err.na.1440x2.60hr"
 pfx_dir: "/lustre/ensemble"
 gfs_pfix: "https://ftp.ncep.noaa.gov/data/nccf/com/gfs/prod/gfs.${date_prv}/${hour_from}/atmos"
 gfs_file_atm: "gfs.t${hour_from}z.atmf006.nemsio"

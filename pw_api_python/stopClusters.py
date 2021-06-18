@@ -19,7 +19,7 @@ pw_url = "https://noaa.parallel.works"
 
 # specify the clusters to start and wait for activation
 #clusters = ["gcluster_noaa"]
-clusters = sys.argv[1].split(',')
+clusters = [x.lower() for x in sys.argv[1].split(',')]
 
 # used to run test ssh commands after the clusters start
 # ensure your public key is added to the cluster configuration on Parallel Works

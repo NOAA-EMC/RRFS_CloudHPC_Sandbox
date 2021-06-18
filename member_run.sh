@@ -653,7 +653,12 @@ run_forecast () {
         sed -i "s@__FCST_OUT_FILE__@$fcst_out_file@g" run_forecast.sh
         sed -i "s@__FCST_ERR_FILE__@$fcst_err_file@g" run_forecast.sh
 
-	chmod +x fv3_gfs.x
+	if [[ $mem_num == "7" || $mem_num == "8" || $mem_num == "9" ]]; then
+		cp fv3_gfs.x.upp1006 fv3_gfs.x
+		chmod +x fv3_gfs.x
+	else
+		chmod +x fv3_gfs.x
+	fi
 
         if [ ! -d "RESTART" ]; then
                 mkdir -p RESTART

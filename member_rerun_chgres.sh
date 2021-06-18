@@ -7,6 +7,10 @@ set -e
 cd "$(dirname "${BASH_SOURCE[0]}")"
 source ./bash-yaml/script/yaml.sh
 
+module use -a /contrib/apps/modules
+module load hpc-stack/1.1.0
+module load intel/19.0.5.281
+
 create_scripts () {
         local mem_num=${1}
 	local idx
@@ -130,7 +134,7 @@ cd $MEMBER_SCRIPTS
 		gep_num=`eval echo "${members__gep_num[$idx]}"`
 		beg_hour=`eval echo "${members__beg_hour[$idx]}"`
 		end_hour=`eval echo "${members__end_hour[$idx]}"`
-echo "Member No =  = $mem_num"
+echo "Member No = $mem_num"
         	sed -i "s@__TYPE__@$Type@g" run_download.sh 
         	sed -i "s@__MEM_NUM__@${mem_num}@g" run_download.sh 
         	sed -i "s@__GEP_NUM__@${gep_num}@g" run_download.sh 
@@ -244,33 +248,16 @@ run_scripts () {
 			rm -rf $status_file_chgres_end
 		fi
 
-		##cd ${RUNDIR}/scripts
-		##post_stat=$(aws s3 cp ${mem_num} ${s3_scripts_pfx}/${mem_num}/ --recursive)
-		##wait 
-		##echo "$post_stat"
 
-		cd ${dirpath}
-		status=No
-		while (test "$status" != "Yes" )
-		do
-			if [ -f "$status_file_script" ]; then
-				echo "GFS DATA DOWNLOAD STARTED" > ${status_file_download_beg}
-				date_str=$(date)
-				echo "$date_str member:$mem_num DATA DOWNLOAD STARTED" >> ${tstamps}
-				bash ${dirpath}/run_download.sh >& download.out 
-				wait
-				status=Yes
-				echo "GFS DATA DOWNLOAD COMPLETED" > ${status_file_download_end}
-				date_str=$(date)
-				echo "$date_str member:$mem_num DATA DOWNLOAD COMPLETED" >> ${tstamps}
-			else
-				sleep 5
-			fi
-		done
-		if [ $mem_num == "1" ]; then
+		if [[ $mem_num == "1" || $mem_num == "4" || $mem_num == "7" ]]; then
+				data_mem_num=1
 			        cd ${RUNDIR}/download
-				post_stat=$(aws s3 cp ${mem_num} ${s3_download_pfx}/${mem_num}/ --recursive)
+				post_stat=$(aws s3 cp ${s3_download_pfx}/${data_mem_num}/ ${mem_num} --recursive)
 		fi
+	        cd $MEMBER_SCRIPTS
+                chmod +x grib2_unique.pl
+                python grib2_combine.py
+		cd ${dirpath}
 
 				echo "GFS CHGRES STARTED" > ${status_file_chgres_beg}
 				date_str=$(date)
@@ -396,32 +383,16 @@ run_scripts () {
 			rm -rf $status_file_chgres_end
 		fi
 
-		##cd ${RUNDIR}/scripts
-		##post_stat=$(aws s3 cp ${mem_num} ${s3_scripts_pfx}/${mem_num}/ --recursive)
-		##wait 
-		##echo "$post_stat"
-
-		cd ${dirpath}
-		status=No
-		while (test "$status" != "Yes" )
-		do
-			if [ -f "$status_file_script" ]; then
-				echo "GEFS DATA DOWNLOAD STARTED" > ${status_file_download_beg}
-				date_str=$(date)
-				echo "$date_str member:$mem_num DATA DOWNLOAD STARTED" >> ${tstamps}
-				bash ${dirpath}/run_download.sh >& download.out 
-				wait
-				status=Yes
-				echo "GEFS DATA DOWNLOAD COMPLETED" > ${status_file_download_end}
-				date_str=$(date)
-				echo "$date_str member:$mem_num DATA DOWNLOAD COMPLETED" >> ${tstamps}
-			else
-				sleep 5
-			fi
-		done
-		if [[ $mem_num == "2" || $mem_num == "3" ]]; then
+		if [[ $mem_num == "2" || $mem_num == "5" || $mem_num == "8" ]]; then
+				data_mem_num=2
 			        cd ${RUNDIR}/download
-				post_stat=$(aws s3 cp ${mem_num} ${s3_download_pfx}/${mem_num}/ --recursive)
+				post_stat=$(aws s3 cp ${s3_download_pfx}/${data_mem_num}/ ${mem_num} --recursive)
+				echo "s3 download $post_stat"
+		fi
+		if [[ $mem_num == "3" || $mem_num == "6" || $mem_num == "9" ]]; then
+				data_mem_num=3
+			        cd ${RUNDIR}/download
+				post_stat=$(aws s3 cp ${s3_download_pfx}/${data_mem_num}/ ${mem_num} --recursive)
 		fi
 		echo "GEFS CHGRES STARTED" > ${status_file_chgres_beg}
 		date_str=$(date)
@@ -599,7 +570,7 @@ cd ${RUNDIR}
 
 member=${2}
 echo "My member number is $member"
-	create_scripts $member &
+	create_scripts $member 
 	run_scripts $member &
 
 exit 0

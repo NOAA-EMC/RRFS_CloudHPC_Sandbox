@@ -27,7 +27,7 @@ pw_url = "https://noaa.parallel.works"
 
 # specify the clusters to start and wait for activation
 #clusters = ["gcluster_noaa"]
-clusters = sys.argv[1].split(',')
+clusters = [x.lower() for x in sys.argv[1].split(',')]
 
 print('\nStarting clusters:',clusters)
 
@@ -80,7 +80,7 @@ for cluster_name in clusters:
             print(cluster_name,"already running...")
     else:
         print("No cluster found.")
-        #sys.exit(1)
+        sys.exit(1)
 
 print("\nWaiting for",len(clusters),"cluster(s) to start...")
 
@@ -95,19 +95,19 @@ while True:
       
       #print(cluster['name'],cluster['status'])
       
-      if cluster['name'] in clusters and cluster['status'] == 'on':
+      if cluster['name'].lower() in clusters and cluster['status'] == 'on':
       
-        if cluster['name'] not in started:
+        if cluster['name'].lower() not in started:
     
           state = cluster['state']
     
-          if cluster['name'] not in laststate:
-              print(cluster['name'],state)
-              laststate[cluster['name']] = state
+          if cluster['name'].lower() not in laststate:
+              print(cluster['name'].lower(),state)
+              laststate[cluster['name'].lower()] = state
           
-          elif laststate[cluster['name']] != state:
-              print(cluster['name'],state)
-              laststate[cluster['name']] = state
+          elif laststate[cluster['name'].lower()] != state:
+              print(cluster['name'].lower(),state)
+              laststate[cluster['name'].lower()] = state
       
           # if state == 'ok':
           #     break
@@ -117,10 +117,10 @@ while True:
           if 'masterNode' in cluster['state']:
             if cluster['state']['masterNode'] != None:
               ip = cluster['state']['masterNode'] 
-              entry = ' '.join([cluster['name'], ip])
+              entry = ' '.join([cluster['name'].lower(), ip])
               print(entry)
               cluster_hosts.append(entry)
-              started.append(cluster['name'])
+              started.append(cluster['name'].lower())
       
     if len(started) == len(clusters):
       print('\nStarted all clusters... writing hosts file')
